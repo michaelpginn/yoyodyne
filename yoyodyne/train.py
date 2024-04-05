@@ -14,7 +14,7 @@ class Error(Exception):
     pass
 
 
-def _get_logger(experiment: str, model_dir: str, log_wandb: bool) -> List:
+def _get_logger(wandb: str, experiment: str, model_dir: str, log_wandb: bool) -> List:
     """Creates the logger(s).
 
     Args:
@@ -27,7 +27,7 @@ def _get_logger(experiment: str, model_dir: str, log_wandb: bool) -> List:
     """
     trainer_logger = [loggers.CSVLogger(model_dir, name=experiment)]
     if log_wandb:
-        trainer_logger.append(loggers.WandbLogger(project=experiment))
+        trainer_logger.append(loggers.WandbLogger(project=wandb))
         # Tells PTL to log the best validation accuracy.
         wandb.define_metric("val_accuracy", summary="max")
         # Logs the path to local artifacts made by PTL.
@@ -98,7 +98,7 @@ def get_trainer_from_argparse_args(
         callbacks=_get_callbacks(args.save_top_k, args.patience, args.save_best),
         default_root_dir=args.model_dir,
         enable_checkpointing=True,
-        logger=_get_logger(args.experiment, args.model_dir, args.log_wandb),
+        logger=_get_logger(args.wandb_project, args.experiment, args.model_dir, args.log_wandb),
     )
 
 
@@ -261,6 +261,9 @@ def add_argparse_args(parser: argparse.ArgumentParser) -> None:
         "--experiment", required=True, help="Name of experiment."
     )
     parser.add_argument(
+        "--wandb_project", default= None, help="Name of wandb_project."
+    )
+    parser.add_argument(
         "--train",
         required=True,
         help="Path to input training data TSV.",
@@ -350,6 +353,8 @@ def main() -> None:
         wandb.config["n_model_params"] = sum(
             p.numel() for p in model.parameters()
         )
+        if not args.wandb_project:
+            args.wandb_project = args.experiment
     # Tuning options. Batch autoscaling is unsupported; LR tuning logs the
     # suggested value and then exits.
     if args.auto_scale_batch_size:
