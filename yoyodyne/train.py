@@ -221,6 +221,7 @@ def get_model_from_argparse_args(
         source_vocab_size=source_vocab_size,
         start_idx=datamodule.index.start_idx,
         target_vocab_size=datamodule.index.target_vocab_size,
+        teacher_forcing=args.teacher_forcing,
     )
 
 
